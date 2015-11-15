@@ -1,0 +1,21 @@
+[mysql-proxy]
+daemon = true
+pid-file = /var/run/mysql-proxy.pid
+log-file = /var/log/mysql-proxy.log
+log-level = debug
+max-open-files = 1024
+plugins = admin,proxy
+user = mysql-proxy
+#
+#Proxy Configuration
+proxy-address = 0.0.0.0:3306
+proxy-backend-addresses = dbmaster:3306
+proxy-read-only-backend-addresses = dbslave:3306
+proxy-lua-script = /usr/lib/mysql-proxy/lua/proxy/rw-splitting.lua
+#proxy-skip-profiling = true
+#
+# Admin Configuration
+admin-address = 0.0.0.0:4041
+admin-lua-script = /usr/lib64/mysql-proxy/lua/admin.lua
+admin-username = admin
+admin-password = admin
