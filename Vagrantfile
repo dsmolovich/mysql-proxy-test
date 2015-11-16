@@ -22,22 +22,22 @@ Vagrant.configure("2") do |config|
       service mysqld restart
 
       # user 'repl':
-      mysql -uroot -e"CREATE USER 'repl'@'%' IDENTIFIED BY 'slavepass';GRANT REPLICATION SLAVE, RELOAD, SUPER, REPLICATION CLIENT ON *.* TO 'repl'@'%';FLUSH PRIVILEGES;"
+      mysql -uroot -e"CREATE USER 'repl'@'%' IDENTIFIED BY 'slavepass'; GRANT REPLICATION SLAVE, RELOAD, SUPER, REPLICATION CLIENT ON *.* TO 'repl'@'%'; FLUSH PRIVILEGES;"
 
-      # user 'test':
-      mysql -uroot -e"CREATE USER 'test'@'%' IDENTIFIED BY 'test';GRANT ALL ON test.* TO 'test'@'%';FLUSH PRIVILEGES;"
+      # user 'appuser':
+      mysql -uroot -e"CREATE USER 'appuser'@'%' IDENTIFIED BY 'apppassword'; GRANT DROP, CREATE, SELECT, INSERT, UPDATE, DELETE ON appdb.* TO 'appuser'@'%'; FLUSH PRIVILEGES;"
 
     SHELL
   end
 
-  config.vm.define "dbslave" do |dbslave|
+  config.vm.define "dbslave1" do |dbslave1|
     config.vm.network "private_network", ip: "192.168.35.103"
-    dbslave.vm.box = "2creatives/centos65-x86_64-20140116"
-    config.vm.hostname = "dbslave"
+    dbslave1.vm.box = "2creatives/centos65-x86_64-20140116"
+    config.vm.hostname = "dbslave1"
 
     config.vm.provision "shell", inline: <<-SHELL
       COMMONSETUPDIR="/vagrant/.setup/common/"
-      VMSETUPDIR="/vagrant/.setup/dbslave/"
+      VMSETUPDIR="/vagrant/.setup/dbslave1/"
 
       cp -r $COMMONSETUPDIR/* /
       yum install -y mysql-server
@@ -57,8 +57,42 @@ Vagrant.configure("2") do |config|
       mysql -uroot -e"CHANGE MASTER TO MASTER_HOST='dbmaster', MASTER_USER='repl',MASTER_PASSWORD='slavepass', MASTER_LOG_FILE='$MASTER_LOG_FILE', MASTER_LOG_POS=$MASTER_LOG_POS;"
       mysql -uroot -e"START SLAVE;"
 
-      # user 'test' read-only:
-      mysql -uroot -e"CREATE USER 'test'@'%' IDENTIFIED BY 'test';GRANT SELECT ON test.* TO 'test'@'%';FLUSH PRIVILEGES;"
+      # user 'appuser' read-only:
+      mysql -uroot -e"CREATE USER 'appuser'@'%' IDENTIFIED BY 'apppassword'; GRANT SELECT ON appdb.* TO 'appuser'@'%'; FLUSH PRIVILEGES;"
+
+    SHELL
+
+  end
+
+  config.vm.define "dbslave2" do |dbslave2|
+    config.vm.network "private_network", ip: "192.168.35.104"
+    dbslave2.vm.box = "2creatives/centos65-x86_64-20140116"
+    config.vm.hostname = "dbslave2"
+
+    config.vm.provision "shell", inline: <<-SHELL
+      COMMONSETUPDIR="/vagrant/.setup/common/"
+      VMSETUPDIR="/vagrant/.setup/dbslave2/"
+
+      cp -r $COMMONSETUPDIR/* /
+      yum install -y mysql-server
+      cp -r $VMSETUPDIR/* /
+
+      service mysqld restart
+
+      # setup replication:
+      mysql -hdbmaster -urepl -pslavepass -e"FLUSH TABLES WITH READ LOCK;"
+      mysql -hdbmaster -urepl -pslavepass -e"SHOW MASTER STATUS;" | grep mysql > /tmp/master_status
+      STATUS=$(cat /tmp/master_status)
+      MASTER_LOG_FILE=${STATUS:0:16};
+      MASTER_LOG_POS=${STATUS:17:3};
+
+      echo MASTER_LOG_FILE=$MASTER_LOG_FILE MASTER_LOG_POS=$MASTER_LOG_POS
+
+      mysql -uroot -e"CHANGE MASTER TO MASTER_HOST='dbmaster', MASTER_USER='repl',MASTER_PASSWORD='slavepass', MASTER_LOG_FILE='$MASTER_LOG_FILE', MASTER_LOG_POS=$MASTER_LOG_POS;"
+      mysql -uroot -e"START SLAVE;"
+
+      # user 'appuser' read-only:
+      mysql -uroot -e"CREATE USER 'appuser'@'%' IDENTIFIED BY 'apppassword'; GRANT SELECT ON appdb.* TO 'appuser'@'%'; FLUSH PRIVILEGES;"
 
     SHELL
 
@@ -82,6 +116,7 @@ Vagrant.configure("2") do |config|
 
       service mysql-proxy start
 
+      /bin/sh /vagrant/test/create_db.sh
     SHELL
   end
 

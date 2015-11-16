@@ -1,19 +1,12 @@
 <?php
 
 define('DBHOST', 'dbproxy');
-define('DBNAME', 'test');
-define('USERNAME', 'test');
-define('PASSWORD', 'test');
+define('DBNAME', 'appdb');
+define('USERNAME', 'appuser');
+define('PASSWORD', 'apppassword');
 
-
-$createTableSQL = <<<SQL
-	DROP TABLE IF EXISTS `rw_test`;
-	CREATE TABLE IF NOT EXISTS `rw_test` (
-	  `id` int(11) NOT NULL AUTO_INCREMENT,
-	  `counter` int(255) NOT NULL,
-	  PRIMARY KEY (`id`)
-	) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
-	INSERT INTO rw_test VALUES (1, 0);
+$resetSQL = <<<SQL
+	UPDATE rw_test SET counter=0 WHERE id=1;
 SQL;
 
 $writeSQL = <<<SQL
@@ -31,12 +24,11 @@ try {
 		USERNAME,
 		PASSWORD
 	);
+	$resetResult = $db->exec($resetSQL);
 
-	// create table:
-	$stmt = $db->exec($createTableSQL);
 
 	$numberOfFailures = 0;
-	for($i=1; $i<100000; $i++) {
+	for($i=1; $i<=1000000; $i++) {
 		$writeResult = $db->exec($writeSQL);
 
 		$stmt = $db->query($readSQL);

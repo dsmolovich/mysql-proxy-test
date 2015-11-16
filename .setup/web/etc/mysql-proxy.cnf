@@ -10,7 +10,7 @@ user = mysql-proxy
 #Proxy Configuration
 proxy-address = 0.0.0.0:3306
 proxy-backend-addresses = dbmaster:3306
-proxy-read-only-backend-addresses = dbslave:3306
+proxy-read-only-backend-addresses = dbslave1:3306,dbslave2:3306
 proxy-lua-script = /usr/lib/mysql-proxy/lua/proxy/rw-splitting.lua
 #proxy-skip-profiling = true
 #
