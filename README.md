@@ -16,6 +16,7 @@
 Run #12 multiple times to see the spread across db servers.
 
 You'll see something like this:
+
 	mysql> select * from backends;
 	+-------------+---------------------+-------+------+------+-------------------+
 	| backend_ndx | address             | state | type | uuid | connected_clients |
